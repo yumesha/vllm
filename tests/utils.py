@@ -1205,7 +1205,12 @@ def get_physical_device_indices(devices):
     if visible_devices is None:
         return devices
 
-    visible_indices = [int(x) for x in visible_devices.split(",")]
+    # Under MIG, CUDA_VISIBLE_DEVICES contains UUIDs (e.g. "MIG-...")
+    # which are not integer indices. Return logical indices as-is.
+    try:
+        visible_indices = [int(x) for x in visible_devices.split(",")]
+    except ValueError:
+        return devices
     index_mapping = {i: physical for i, physical in enumerate(visible_indices)}
     return [index_mapping[i] for i in devices if i in index_mapping]
 

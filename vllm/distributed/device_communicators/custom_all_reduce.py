@@ -133,7 +133,11 @@ class CustomAllreduce:
                 )
         cuda_visible_devices = envs.CUDA_VISIBLE_DEVICES
         if cuda_visible_devices:
-            device_ids = list(map(int, cuda_visible_devices.split(",")))
+            try:
+                device_ids = list(map(int, cuda_visible_devices.split(",")))
+            except ValueError:
+                # MIG UUIDs are not integer indices; use logical indices
+                device_ids = list(range(cuda_device_count_stateless()))
         else:
             device_ids = list(range(cuda_device_count_stateless()))
 
