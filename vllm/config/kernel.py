@@ -3,7 +3,7 @@
 import contextlib
 from collections.abc import Callable
 from dataclasses import asdict, fields
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 from pydantic import Field, field_validator
 
@@ -11,6 +11,8 @@ from vllm.config.utils import config, get_hash_factors, hash_factors
 from vllm.logger import init_logger
 
 if TYPE_CHECKING:
+    from _typeshed import DataclassInstance
+
     from vllm.config import VllmConfig
 
 logger = init_logger(__name__)
@@ -50,7 +52,7 @@ class IrOpPriorityConfig:
             name: {
                 provider: IrOp.registry[name].impls[provider].uuid() for provider in p
             }
-            for name, p in asdict(self).items()
+            for name, p in asdict(cast("DataclassInstance", self)).items()
         }
 
         return hash_factors(factors)
@@ -74,7 +76,7 @@ class IrOpPriorityConfig:
         from vllm.ir.op import IrOp
 
         with contextlib.ExitStack() as stack:
-            for field in fields(self):
+            for field in fields(cast("DataclassInstance", self)):
                 op_priority = getattr(self, field.name)
                 assert op_priority is not None, (
                     f"IR op priority for {field.name} must be set"
@@ -95,7 +97,7 @@ class IrOpPriorityConfig:
         A helper to create an IrOpPriorityConfig where fields not specified in kwargs
         use the given default list.
         """
-        for field in fields(cls):
+        for field in fields(cast("type[DataclassInstance]", cls)):
             if field.name not in kwargs:
                 kwargs[field.name] = list(default)
 
