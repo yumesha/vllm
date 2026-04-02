@@ -32,7 +32,7 @@ echo_error() { echo -e "${RED}[ERROR]${NC} $*"; }
 # =============================================================================
 
 # CRITICAL: Include NVIDIA driver libraries FIRST in LD_LIBRARY_PATH
-# This fixes "Driver/library version mismatch" errors
+# This fixes "forward compatibility" errors on RTX 5090 and other GPUs
 if [[ -d "/run/opengl-driver/lib" ]]; then
     export LD_LIBRARY_PATH="/run/opengl-driver/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     echo_info "Added /run/opengl-driver/lib to LD_LIBRARY_PATH"

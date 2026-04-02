@@ -102,7 +102,8 @@
 
             # Add CUDA to paths
             export PATH="$CUDA_HOME/bin:$PATH"
-            export LD_LIBRARY_PATH="${cudaPackages.cudatoolkit}/lib:${cudaPackages.cudnn}/lib:${cudaPackages.nccl}/lib:${pkgs.stdenv.cc.cc.lib}/lib:$LD_LIBRARY_PATH"
+            # Include host NVIDIA driver libraries FIRST for forward compatibility
+            export LD_LIBRARY_PATH="/run/opengl-driver/lib:${cudaPackages.cudatoolkit}/lib:${cudaPackages.cudnn}/lib:${cudaPackages.nccl}/lib:${pkgs.stdenv.cc.cc.lib}/lib:$LD_LIBRARY_PATH"
             export LIBRARY_PATH="$LD_LIBRARY_PATH"
 
             # CUDA include paths for cmake
