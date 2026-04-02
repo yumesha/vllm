@@ -12,6 +12,10 @@ vLLM supports the following hardware platforms:
     - [Apple silicon](cpu.md#apple-silicon)
     - [IBM Z (S390X)](cpu.md#ibm-z-s390x)
 
+## Development Environments
+
+- [NixOS](../nixos-development.md) - Reproducible development environment with CUDA support using Nix flakes
+
 ## Hardware Plugins
 
 vLLM supports third-party hardware plugins that live **outside** the main `vllm` repository. These follow the [Hardware-Pluggable RFC](../../design/plugin_system.md).
