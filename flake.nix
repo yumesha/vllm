@@ -2,7 +2,7 @@
   description = "vLLM Development Environment with CUDA support";
 
   inputs = {
-    # Use stable 25.11 to avoid glibc 2.42 + CUDA 12.8 incompatibility
+    # Use stable 25.11 to avoid glibc 2.42 + CUDA 12.9 incompatibility
     # See: https://github.com/NixOS/nixpkgs/pull/484031
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     flake-utils.url = "github:numtide/flake-utils";
@@ -171,7 +171,7 @@
             echo "📚 vLLM Development Quick Reference:"
             echo ""
             echo "🔧 Setup (first time):"
-            echo "   uv pip install torch==2.9.1 --index-url https://download.pytorch.org/whl/cu128"
+            echo "   uv pip install torch==2.9.1 --index-url https://download.pytorch.org/whl/cu129"
             echo "   uv pip install -e .  # Editable install (builds CUDA kernels)"
             echo ""
             echo "🧪 Testing:"
