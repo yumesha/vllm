@@ -1297,7 +1297,7 @@ def _run_in_subprocess(fn: Callable[[], _T]) -> _T:
         # cannot use `sys.executable __file__` here because the script
         # contains relative imports
         returned = subprocess.run(
-            _SUBPROCESS_COMMAND, input=input_bytes, capture_output=True
+            _SUBPROCESS_COMMAND, input=input_bytes, capture_output=True, env={'PYTHONPATH': ':'.join(sys.path)}
         )
 
         # check if the subprocess is successful
