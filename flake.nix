@@ -26,6 +26,11 @@
         # CUDA packages
         cudaPackages = pkgs.cudaPackages_12_9;
 
+        # vLLM Package
+        vllmPackage = pkgs.python3Packages.callPackage ./nix/package.nix {
+          inherit cudaPackages;
+        };
+
         fhsEnv = pkgs.buildFHSEnv {
           name = "vllm-dev-env";
 
@@ -174,7 +179,10 @@
           '';
         };
 
-        packages.default = pkgs.python312;
+        packages = {
+          default = vllmPackage;
+          vllm = vllmPackage;
+        };
       }
     );
 }
