@@ -3,7 +3,6 @@
 
 { lib
 , python3
-, python3Packages
 , fetchFromGitHub
 , cudaPackages
 , autoAddDriverRunpath
@@ -12,6 +11,25 @@
 , cmake
 , ninja
 , gcc13
+  # Python packages - listed individually
+, buildPythonApplication
+, pip
+, wheel
+, setuptools
+, setuptools-scm
+, packaging
+, torch
+, numpy
+, transformers
+, fastapi
+, uvicorn
+, pydantic
+, sentencepiece
+, tokenizers
+, huggingface-hub
+, requests
+, psutil
+, pyzmq
 }:
 
 let
@@ -27,7 +45,7 @@ let
   ];
 in
 
-python3Packages.buildPythonApplication rec {
+buildPythonApplication rec {
   pname = "vllm";
   version = "0.18.3";
 
@@ -42,14 +60,13 @@ python3Packages.buildPythonApplication rec {
     git
     cudaPackages.cuda_nvcc
     autoAddDriverRunpath
-  ] ++ (with python3Packages; [
     pip
     wheel
     setuptools
     setuptools-scm
     packaging
     torch
-  ]);
+  ];
 
   buildInputs = with cudaPackages; [
     nccl
@@ -57,7 +74,7 @@ python3Packages.buildPythonApplication rec {
     libcufile
   ] ++ mergedCudaLibraries;
 
-  propagatedBuildInputs = with python3Packages; [
+  propagatedBuildInputs = [
     torch
     numpy
     transformers

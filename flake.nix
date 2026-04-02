@@ -27,8 +27,28 @@
         cudaPackages = pkgs.cudaPackages_12_9;
 
         # vLLM Package
-        vllmPackage = pkgs.python3Packages.callPackage ./nix/package.nix {
+        vllmPackage = pkgs.callPackage ./nix/package.nix {
           inherit cudaPackages;
+          # Python packages from python3.pkgs
+          inherit (pkgs.python3.pkgs) 
+            buildPythonApplication
+            pip
+            wheel
+            setuptools
+            setuptools-scm
+            packaging
+            torch
+            numpy
+            transformers
+            fastapi
+            uvicorn
+            pydantic
+            sentencepiece
+            tokenizers
+            huggingface-hub
+            requests
+            psutil
+            pyzmq;
         };
 
         fhsEnv = pkgs.buildFHSEnv {
