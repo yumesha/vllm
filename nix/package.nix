@@ -2,47 +2,16 @@
 # Nix package for vLLM
 
 { lib
-, buildPythonPackage
-, python
-, setuptools
-, setuptools-scm
-, cmake
-, ninja
-, packaging
-, torch
+, python3
+, python3Packages
+, fetchFromGitHub
 , cudaPackages
-  # Runtime dependencies
-, numpy
-, transformers
-, fastapi
-, uvicorn
-, pydantic
-, prometheus-fastapi-instrumentator
-, prometheus-client
-, sentencepiece
-, tokenizers
-, huggingface-hub
-, py-cpuinfo
-, psutil
-, py-libnuma
-, openai
-, tiktoken
-, einops
-, ray
-, nvidia-ml-py
-, requests
-, pyzmq
-, zmq
-, uvloop
-, python-json-logger
-, transformers-stream-generator
-, einops-exts
-, torchaudio
-, torchvision
-, pip
-, wheel
 , autoAddDriverRunpath
 , symlinkJoin
+, git
+, cmake
+, ninja
+, gcc13
 }:
 
 let
@@ -56,40 +25,31 @@ let
     cuda_nvrtc
     libcublas
   ];
-
-  getAllOutputs = p: [
-    (lib.getBin p)
-    (lib.getLib p)
-    (lib.getDev p)
-  ];
 in
 
-buildPythonPackage rec {
+python3Packages.buildPythonApplication rec {
   pname = "vllm";
   version = "0.18.3";
 
   src = lib.cleanSource ../.;
 
-  pyproject = true;
+  format = "pyproject";
 
   nativeBuildInputs = [
     cmake
     ninja
-    packaging
-    setuptools
-    setuptools-scm
+    gcc13
+    git
     cudaPackages.cuda_nvcc
     autoAddDriverRunpath
-  ];
-
-  build-system = [
-    cmake
-    ninja
-    packaging
+  ] ++ (with python3Packages; [
+    pip
+    wheel
     setuptools
     setuptools-scm
+    packaging
     torch
-  ];
+  ]);
 
   buildInputs = with cudaPackages; [
     nccl
@@ -97,52 +57,52 @@ buildPythonPackage rec {
     libcufile
   ] ++ mergedCudaLibraries;
 
-  dontUseCmakeConfigure = true;
-
-  cmakeFlags = [
-    "-DCMAKE_BUILD_TYPE=Release"
-    "-DVLLM_TARGET_DEVICE=cuda"
-    "-DCUDA_TOOLKIT_ROOT_DIR=${symlinkJoin {
-      name = "cuda-merged-${cudaPackages.cudaMajorMinorVersion}";
-      paths = builtins.concatMap getAllOutputs mergedCudaLibraries;
-    }}"
-    "-DCAFFE2_USE_CUDNN=ON"
-    "-DCAFFE2_USE_CUFILE=ON"
-  ];
-
-  env = {
-    VLLM_TARGET_DEVICE = "cuda";
-    CUDA_HOME = "${lib.getDev cudaPackages.cuda_nvcc}";
-    MAX_JOBS = "8";
-  };
-
-  propagatedBuildInputs = [
+  propagatedBuildInputs = with python3Packages; [
     torch
     numpy
     transformers
     fastapi
     uvicorn
     pydantic
-    prometheus-fastapi-instrumentator
-    prometheus-client
     sentencepiece
     tokenizers
     huggingface-hub
-    py-cpuinfo
-    psutil
-    py-libnuma
-    openai
-    tiktoken
-    einops
-    ray
-    nvidia-ml-py
     requests
+    psutil
     pyzmq
-    uvloop
-    python-json-logger
-    torchaudio
-    torchvision
   ];
+
+  dontUseCmakeConfigure = true;
+
+  env = {
+    VLLM_TARGET_DEVICE = "cuda";
+    CUDA_HOME = "${lib.getDev cudaPackages.cuda_nvcc}";
+    MAX_JOBS = "8";
+    TORCH_CUDA_ARCH_LIST = "10.0;12.0";
+  };
+
+  # Skip pip install check since we build from source
+  dontUsePipInstall = true;
+
+  buildPhase = ''
+    runHook preBuild
+
+    export HOME=$TMPDIR
+
+    # Build vLLM
+    ${python3.interpreter} setup.py build_ext --inplace
+
+    runHook postBuild
+  '';
+
+  installPhase = ''
+    runHook preInstall
+
+    # Install using pip
+    pip install . --prefix=$out --no-build-isolation --no-deps
+
+    runHook postInstall
+  '';
 
   pythonImportsCheck = [ "vllm" ];
 
@@ -150,6 +110,5 @@ buildPythonPackage rec {
     description = "High-throughput and memory-efficient inference and serving engine for LLMs";
     homepage = "https://github.com/yumesha/vllm";
     license = licenses.asl20;
-    maintainers = [ ];
   };
 }
