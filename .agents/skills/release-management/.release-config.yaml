@@ -1,0 +1,42 @@
+# Release Management Configuration
+
+# Version pattern to match
+version_pattern: "v0.18.x"
+
+# Branch to release from
+release_branch: "main"
+
+# Auto-detect version bump (always patch for 0.18.x)
+version_bump: "patch"
+
+# Release notes settings
+release_notes:
+  # Include commit messages
+  include_commits: true
+  # Maximum commits to include
+  max_commits: 20
+
+# Safety checks
+safety_checks:
+  # Require clean working directory
+  require_clean: true
+  # Require specific branch
+  require_branch: "main"
+  # Confirm before creating release
+  confirm_before_release: true
+
+# Git settings
+git:
+  # Remote to push tags to
+  remote: "origin"
+  # Tag signature (annotated tags)
+  signed_tags: false
+
+# GitHub settings
+github:
+  # Create GitHub release automatically
+  create_release: true
+  # Draft release (requires manual publish)
+  draft: false
+  # Mark as prerelease
+  prerelease: false
