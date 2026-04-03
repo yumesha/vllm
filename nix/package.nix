@@ -145,6 +145,8 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
   # Pre-build setup
   preBuild = ''
     export HOME=$TMPDIR
+    # Ensure cmake is in PATH for PEP 517 build
+    export PATH="${lib.makeBinPath [ cmake ninja ]}:$PATH"
   '';
 
   # Don't run tests during build (too slow)
