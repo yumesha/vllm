@@ -47,7 +47,7 @@ in
 
 buildPythonApplication rec {
   pname = "vllm";
-  version = "0.18.8";
+  version = "0.18.9";
 
   src = lib.cleanSource ../.;
 
@@ -60,6 +60,11 @@ buildPythonApplication rec {
     git
     cudaPackages.cuda_nvcc
     autoAddDriverRunpath
+    # Python build dependencies
+    setuptools
+    setuptools-scm
+    packaging
+    wheel
   ];
 
   buildInputs = with cudaPackages; [
