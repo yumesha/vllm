@@ -2,6 +2,7 @@
 # Nix package for vLLM - builds from local source
 
 { lib
+, stdenv
 , python3
 , fetchFromGitHub
 , cudaPackages
@@ -52,6 +53,41 @@ let
     repo = "cutlass";
     tag = "v4.4.2";  # Match CUTLASS_REVISION in CMakeLists.txt
     hash = "sha256-0q9Ad0Z6E/rO2PdM4uQc8H0E0qs9uKc3reHepiHhjEc=";
+  };
+
+  # FlashMLA requires CUTLASS v3.9.0 (incompatible with v4.x)
+  # See: https://github.com/vllm-project/vllm/issues/27425
+  cutlass-flashmla = fetchFromGitHub {
+    name = "cutlass-flashmla-source";
+    owner = "NVIDIA";
+    repo = "cutlass";
+    rev = "147f5673d0c1c3dcf66f78d677fd647e4a020219";
+    hash = "sha256-dHQto08IwTDOIuFUp9jwm1MWkFi8v2YJ/UESrLuG71g=";
+  };
+
+  # FlashMLA source
+  flashmla = stdenv.mkDerivation {
+    pname = "flashmla";
+    version = "1.0.0";
+
+    src = fetchFromGitHub {
+      name = "FlashMLA-source";
+      owner = "vllm-project";
+      repo = "FlashMLA";
+      rev = "c2afa9cb93e674d5a9120a170a6da57b89267208";
+      hash = "sha256-pKlwxV6G9iHag/jbu3bAyvYvnu5TbrQwUMFV0AlGC3s=";
+    };
+
+    dontConfigure = true;
+
+    buildPhase = ''
+      rm -rf csrc/cutlass
+      ln -sf ${cutlass-flashmla} csrc/cutlass
+    '';
+
+    installPhase = ''
+      cp -rva . $out
+    '';
   };
 
   # Triton kernels source
@@ -139,6 +175,7 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
         paths = builtins.concatMap (p: [ (lib.getBin p) (lib.getLib p) (lib.getDev p) ]) mergedCudaLibraries;
       }}")
       (lib.cmakeFeature "CUTLASS_NVCC_ARCHS_ENABLED" "80;86;89;90")
+      (lib.cmakeFeature "FLASH_MLA_SRC_DIR" "${flashmla}")
       # Explicitly set VLLM_PYTHON_EXECUTABLE to ensure cmake can find Python
       (lib.cmakeFeature "VLLM_PYTHON_EXECUTABLE" "${python3.interpreter}")
     ];
@@ -151,12 +188,6 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
 
   # Disable cmake configure phase - vllm uses setup.py
   dontUseCmakeConfigure = true;
-
-  # Explicitly set VLLM_PYTHON_EXECUTABLE to ensure cmake can find Python
-  # This is needed both for setup.py and as a fallback if cmake is invoked directly
-  cmakeFlags = [
-    (lib.cmakeFeature "VLLM_PYTHON_EXECUTABLE" "${lib.getBin python3}/bin/${python3.executable}")
-  ];
 
   # Don't run tests during build (too slow)
   doCheck = false;
