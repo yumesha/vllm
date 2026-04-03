@@ -205,7 +205,7 @@ in
 buildPythonPackage.override { stdenv = torch.stdenv; } rec {
   pname = "vllm";
   version = "0.18.12";
-  format = "setuptools";
+  pyproject = true;
 
   # Use local source
   src = lib.cleanSource ../.;
@@ -219,11 +219,17 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
     which
     cudaPackages.cuda_nvcc
     autoAddDriverRunpath
+  ];
+
+  # PEP-517 build system
+  build-system = [
     setuptools
     setuptools-scm
     packaging
     wheel
     torch
+    cmake
+    ninja
   ];
 
   # Runtime/build dependencies
