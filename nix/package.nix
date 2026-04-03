@@ -91,6 +91,13 @@ buildPythonApplication rec {
 
   dontUseCmakeConfigure = true;
 
+  # Patch pyproject.toml to relax version constraints for Nix build
+  postPatch = ''
+    substituteInPlace pyproject.toml \
+      --replace 'cmake>=3.26.1' 'cmake' \
+      --replace 'torch == 2.10.0' 'torch'
+  '';
+
   env = {
     VLLM_TARGET_DEVICE = "cuda";
     CUDA_HOME = "${lib.getDev cudaPackages.cuda_nvcc}";
