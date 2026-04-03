@@ -47,7 +47,7 @@ in
 
 buildPythonApplication rec {
   pname = "vllm";
-  version = "0.18.3";
+  version = "0.18.5";
 
   src = lib.cleanSource ../.;
 
