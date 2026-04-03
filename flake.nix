@@ -30,7 +30,7 @@
         vllmPackage = pkgs.callPackage ./nix/package.nix {
           inherit cudaPackages;
           python3 = pkgs.python312;
-          # Python packages from python312.pkgs
+          # Python packages from python312.pkgs - core dependencies
           inherit (pkgs.python312.pkgs)
             buildPythonPackage
             pip
@@ -49,7 +49,56 @@
             huggingface-hub
             requests
             psutil
-            pyzmq;
+            pyzmq
+            # Build system dependencies
+            jinja2
+            grpcio-tools
+            # Additional runtime dependencies (optional)
+            cbor2
+            blake3
+            cachetools
+            einops
+            gguf
+            protobuf
+            py-cpuinfo
+            prometheus-client
+            prometheus-fastapi-instrumentator
+            python-json-logger
+            tiktoken
+            compressed-tensors
+            depyf
+            partial-json-parser
+            xgrammar
+            msgspec
+            outlines
+            lm-format-enforcer
+            llguidance
+            opentelemetry-api
+            opentelemetry-sdk
+            opentelemetry-exporter-otlp
+            aioprometheus
+            anthropic
+            bitsandbytes
+            grpcio
+            grpcio-reflection
+            ijson
+            importlib-metadata
+            mcp
+            mistral-common
+            model-hosting-container-standards
+            numba
+            openai
+            pandas
+            pyarrow
+            pybase64
+            ray
+            setproctitle
+            torchaudio
+            torchvision
+            xformers
+            cupy
+            flashinfer
+            nvidia-ml-py;
         };
 
         fhsEnv = pkgs.buildFHSEnv {
