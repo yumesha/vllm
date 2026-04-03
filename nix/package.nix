@@ -53,6 +53,15 @@ let
     tag = "v4.4.2";  # Match CUTLASS_REVISION in CMakeLists.txt
     hash = "sha256-0q9Ad0Z6E/rO2PdM4uQc8H0E0qs9uKc3reHepiHhjEc=";
   };
+
+  # Triton kernels source
+  triton-kernels = fetchFromGitHub {
+    name = "triton-kernels-source";
+    owner = "triton-lang";
+    repo = "triton";
+    tag = "v3.6.0";
+    hash = "sha256-JFSpQn+WsNnh7CAPlcpOcUp0nyKXNbJEANdXqmkt4Tc=";
+  };
 in
 
 buildPythonPackage.override { stdenv = torch.stdenv; } rec {
@@ -120,6 +129,7 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
     NVCC_THREADS = "1";
     VLLM_USE_TRITON_FLASH_ATTN = "0";
     VLLM_DISABLE_SCCACHE = "1";
+    TRITON_KERNELS_SRC_DIR = "${lib.getDev triton-kernels}/python/triton_kernels/triton_kernels";
     # Pass cmake flags via CMAKE_ARGS (read by setup.py)
     CMAKE_ARGS = lib.concatStringsSep " " [
       (lib.cmakeFeature "FETCHCONTENT_SOURCE_DIR_CUTLASS" "${lib.getDev cutlass}")
@@ -141,6 +151,12 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
 
   # Disable cmake configure phase - vllm uses setup.py
   dontUseCmakeConfigure = true;
+
+  # Explicitly set VLLM_PYTHON_EXECUTABLE to ensure cmake can find Python
+  # This is needed both for setup.py and as a fallback if cmake is invoked directly
+  cmakeFlags = [
+    (lib.cmakeFeature "VLLM_PYTHON_EXECUTABLE" "${lib.getBin python3}/bin/${python3.executable}")
+  ];
 
   # Don't run tests during build (too slow)
   doCheck = false;
