@@ -221,15 +221,15 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
     autoAddDriverRunpath
   ];
 
-  # PEP-517 build system
+  # PEP-517 build system - must match pyproject.toml build-system
   build-system = [
     setuptools
     setuptools-scm
     packaging
     wheel
     torch
-    cmake
-    ninja
+    jinja2
+    grpcio-tools
   ];
 
   # Runtime/build dependencies
