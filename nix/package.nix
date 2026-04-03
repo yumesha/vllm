@@ -1,5 +1,5 @@
 # nix/package.nix
-# Nix package for vLLM
+# Nix package for vLLM - based on official nixpkgs approach
 
 { lib
 , python3
@@ -45,16 +45,17 @@ let
     libcublas
   ];
 
-  # Fetch CUTLASS source for vLLM build
+  # CUTLASS source for vLLM build
   cutlass = fetchFromGitHub {
+    name = "cutlass-source";
     owner = "NVIDIA";
     repo = "cutlass";
-    rev = "v4.4.2";  # Match CUTLASS_REVISION in CMakeLists.txt
-    sha256 = "0iwcw4hsdpp1mlvsgf1xmg908zgh3kjf4k7pv37gl4vs8rvl1byj";
+    tag = "v4.4.2";  # Match CUTLASS_REVISION in CMakeLists.txt
+    hash = "sha256-0q9Ad0Z6E/rO2PdM4uQc8H0E0qs9uKc3reHepiHhjEc=";
   };
 in
 
-buildPythonApplication rec {
+buildPythonApplication.override { stdenv = torch.stdenv; } rec {
   pname = "vllm";
   version = "0.18.12";
 
@@ -75,7 +76,6 @@ buildPythonApplication rec {
     packaging
     wheel
     torch
-    # Python cmake package (required by pyproject.toml build-system)
     python312Packages.cmake
   ];
 
@@ -102,10 +102,20 @@ buildPythonApplication rec {
 
   dontUseCmakeConfigure = true;
 
-  # Patch pyproject.toml to relax torch version constraint only
+  cmakeFlags = [
+    (lib.cmakeFeature "FETCHCONTENT_SOURCE_DIR_CUTLASS" "${lib.getDev cutlass}")
+    (lib.cmakeFeature "TORCH_CUDA_ARCH_LIST" "10.0;12.0")
+    (lib.cmakeFeature "CUDA_TOOLKIT_ROOT_DIR" "${symlinkJoin {
+      name = "cuda-merged-${cudaPackages.cudaMajorMinorVersion}";
+      paths = builtins.concatMap (p: [ (lib.getBin p) (lib.getLib p) (lib.getDev p) ]) mergedCudaLibraries;
+    }}")
+  ];
+
+  # Patch pyproject.toml to relax version constraints
   postPatch = ''
     substituteInPlace pyproject.toml \
-      --replace-fail 'torch == 2.10.0' 'torch'
+      --replace-fail "torch == 2.10.0" "torch >= 2.10.0" \
+      --replace-fail "setuptools>=77.0.3,<81.0.0" "setuptools"
   '';
 
   env = {
@@ -113,26 +123,17 @@ buildPythonApplication rec {
     CUDA_HOME = "${lib.getDev cudaPackages.cuda_nvcc}";
     MAX_JOBS = "4";
     NVCC_THREADS = "1";
-    TORCH_CUDA_ARCH_LIST = "10.0;12.0";
     VLLM_USE_TRITON_FLASH_ATTN = "0";
-    # Disable sccache/ccache detection
     VLLM_DISABLE_SCCACHE = "1";
-    # Provide pre-fetched CUTLASS source
-    VLLM_CUTLASS_SRC_DIR = "${cutlass}";
   };
 
-  # Use pyproject hook for building
   preBuild = ''
     export HOME=$TMPDIR
   '';
 
-  # pip install handles the build
   dontUsePipInstall = false;
-
-  # Skip tests during install
   doCheck = false;
-
-  # Avoid strict import check (extensions are built but may not load in build env)
+  pythonRelaxDeps = true;
   pythonImportsCheck = [ "vllm" ];
 
   meta = with lib; {
