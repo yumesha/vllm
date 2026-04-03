@@ -50,7 +50,7 @@ let
     owner = "NVIDIA";
     repo = "cutlass";
     rev = "v4.4.2";  # Match CUTLASS_REVISION in CMakeLists.txt
-    hash = "sha256-0iwcw4hsdpp1mlvsgf1xmg908zgh3kjf4k7pv37gl4vs8rvl1byj";
+    sha256 = "0iwcw4hsdpp1mlvsgf1xmg908zgh3kjf4k7pv37gl4vs8rvl1byj";
   };
 in
 
