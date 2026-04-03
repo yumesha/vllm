@@ -129,6 +129,8 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
         paths = builtins.concatMap (p: [ (lib.getBin p) (lib.getLib p) (lib.getDev p) ]) mergedCudaLibraries;
       }}")
       (lib.cmakeFeature "CUTLASS_NVCC_ARCHS_ENABLED" "80;86;89;90")
+      # Explicitly set VLLM_PYTHON_EXECUTABLE to ensure cmake can find Python
+      (lib.cmakeFeature "VLLM_PYTHON_EXECUTABLE" "${python3.interpreter}")
     ];
   };
 
