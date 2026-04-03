@@ -141,6 +141,9 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
     export HOME=$TMPDIR
   '';
 
+  # Don't use PEP 517 build (it isolates and can't find cmake)
+  dontUsePypaBuild = true;
+
   # Don't run tests during build (too slow)
   doCheck = false;
 
