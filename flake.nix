@@ -26,11 +26,12 @@
         # CUDA packages
         cudaPackages = pkgs.cudaPackages_12_9;
 
-        # vLLM Package
+        # vLLM Package - using Python 3.12 explicitly
         vllmPackage = pkgs.callPackage ./nix/package.nix {
           inherit cudaPackages;
-          # Python packages from python3.pkgs
-          inherit (pkgs.python3.pkgs) 
+          python3 = pkgs.python312;
+          # Python packages from python312.pkgs
+          inherit (pkgs.python312.pkgs)
             buildPythonApplication
             pip
             wheel
