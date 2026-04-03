@@ -206,12 +206,13 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
     CMAKE_ARGS = lib.concatStringsSep " " [
       (lib.cmakeFeature "FETCHCONTENT_SOURCE_DIR_CUTLASS" "${lib.getDev cutlass}")
       (lib.cmakeFeature "CUTLASS_INCLUDE_DIR" "${lib.getDev cutlass}/include")
-      (lib.cmakeFeature "TORCH_CUDA_ARCH_LIST" "8.6;8.9;9.0")
+      # Blackwell (RTX 5090) support requires CUDA 12.8+ and arch 10.0 or 12.0
+      (lib.cmakeFeature "TORCH_CUDA_ARCH_LIST" "8.6;8.9;9.0;10.0;12.0")
       (lib.cmakeFeature "CUDA_TOOLKIT_ROOT_DIR" "${symlinkJoin {
         name = "cuda-merged-${cudaPackages.cudaMajorMinorVersion}";
         paths = builtins.concatMap (p: [ (lib.getBin p) (lib.getLib p) (lib.getDev p) ]) mergedCudaLibraries;
       }}")
-      (lib.cmakeFeature "CUTLASS_NVCC_ARCHS_ENABLED" "80;86;89;90")
+      (lib.cmakeFeature "CUTLASS_NVCC_ARCHS_ENABLED" "80;86;89;90;100;120")
       (lib.cmakeFeature "FLASH_MLA_SRC_DIR" "${lib.getDev flashmla}")
       (lib.cmakeFeature "QUTLASS_SRC_DIR" "${lib.getDev qutlass}")
       (lib.cmakeFeature "VLLM_FLASH_ATTN_SRC_DIR" "${lib.getDev vllm-flash-attn}")
