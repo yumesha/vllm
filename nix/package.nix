@@ -11,7 +11,7 @@
 , cmake
 , ninja
 , gcc13
-  # Python packages
+  # Python packages - from python3.pkgs
 , buildPythonPackage
 , pip
 , wheel
@@ -30,7 +30,6 @@
 , requests
 , psutil
 , pyzmq
-, python312Packages
 }:
 
 let

@@ -32,7 +32,7 @@
           python3 = pkgs.python312;
           # Python packages from python312.pkgs
           inherit (pkgs.python312.pkgs)
-            buildPythonApplication
+            buildPythonPackage
             pip
             wheel
             setuptools
