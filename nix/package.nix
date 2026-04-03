@@ -71,11 +71,17 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
     git
     cudaPackages.cuda_nvcc
     autoAddDriverRunpath
+  ];
+
+  # Python build system dependencies
+  build-system = [
+    cmake
+    ninja
+    packaging
     setuptools
     setuptools-scm
-    packaging
-    wheel
     torch
+    wheel
   ];
 
   # Runtime/build dependencies
@@ -140,9 +146,6 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
   preBuild = ''
     export HOME=$TMPDIR
   '';
-
-  # Don't use PEP 517 build (it isolates and can't find cmake)
-  dontUsePypaBuild = true;
 
   # Don't run tests during build (too slow)
   doCheck = false;
