@@ -55,6 +55,35 @@
 , opentelemetry-api
 , opentelemetry-sdk
 , opentelemetry-exporter-otlp
+  # More dependencies from reference
+, aioprometheus
+, anthropic
+, bitsandbytes
+, grpcio
+, grpcio-reflection
+, ijson
+, importlib-metadata
+, mcp
+, mistral-common
+, model-hosting-container-standards
+, numba
+, openai
+, openai-harmony
+, opencv-python-headless
+, pandas
+, pyarrow
+, pybase64
+, ray
+, setproctitle
+, torchaudio
+, torchvision
+, xformers
+  # CUDA-only dependencies
+, cupy
+, flashinfer
+, nvidia-ml-py
+  # Build tools
+, which
 }:
 
 let
@@ -186,6 +215,7 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
     ninja
     gcc13
     git
+    which
     cudaPackages.cuda_nvcc
     autoAddDriverRunpath
     setuptools
@@ -239,6 +269,32 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
     opentelemetry-api
     opentelemetry-sdk
     opentelemetry-exporter-otlp
+    # More dependencies from reference
+    aioprometheus
+    anthropic
+    bitsandbytes
+    grpcio
+    grpcio-reflection
+    ijson
+    importlib-metadata
+    mcp
+    mistral-common
+    model-hosting-container-standards
+    numba
+    openai
+    openai-harmony
+    opencv-python-headless
+    pandas
+    pyarrow
+    pybase64
+    ray
+    setproctitle
+    torchaudio
+    torchvision
+    xformers
+    cupy
+    flashinfer
+    nvidia-ml-py
   ];
 
   # Tell setuptools-scm to use the version from the tag
@@ -274,6 +330,9 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
         paths = builtins.concatMap (p: [ (lib.getBin p) (lib.getLib p) (lib.getDev p) ]) mergedCudaLibraries;
       }}")
       (lib.cmakeFeature "CUTLASS_NVCC_ARCHS_ENABLED" "80;86;89;90;100;120")
+      (lib.cmakeFeature "CAFFE2_USE_CUDNN" "ON")
+      (lib.cmakeFeature "CAFFE2_USE_CUFILE" "ON")
+      (lib.cmakeFeature "CUTLASS_ENABLE_CUBLAS" "ON")
       (lib.cmakeFeature "FLASH_MLA_SRC_DIR" "${lib.getDev flashmla}")
       (lib.cmakeFeature "QUTLASS_SRC_DIR" "${lib.getDev qutlass}")
       (lib.cmakeFeature "VLLM_FLASH_ATTN_SRC_DIR" "${lib.getDev vllm-flash-attn}")
