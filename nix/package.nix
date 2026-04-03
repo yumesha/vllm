@@ -1,5 +1,5 @@
 # nix/package.nix
-# Nix package for vLLM - based on official nixpkgs approach
+# Nix package for vLLM - builds from local source
 
 { lib
 , python3
@@ -11,8 +11,8 @@
 , cmake
 , ninja
 , gcc13
-  # Python packages - listed individually
-, buildPythonApplication
+  # Python packages
+, buildPythonPackage
 , pip
 , wheel
 , setuptools
@@ -34,6 +34,7 @@
 }:
 
 let
+  # Merge CUDA libraries for cmake
   mergedCudaLibraries = with cudaPackages; [
     cuda_cudart
     cuda_cccl
@@ -45,7 +46,7 @@ let
     libcublas
   ];
 
-  # CUTLASS source for vLLM build
+  # CUTLASS source - must match CUTLASS_REVISION in CMakeLists.txt
   cutlass = fetchFromGitHub {
     name = "cutlass-source";
     owner = "NVIDIA";
@@ -55,14 +56,15 @@ let
   };
 in
 
-buildPythonApplication.override { stdenv = torch.stdenv; } rec {
+buildPythonPackage.override { stdenv = torch.stdenv; } rec {
   pname = "vllm";
   version = "0.18.12";
+  pyproject = true;
 
+  # Use local source
   src = lib.cleanSource ../.;
 
-  format = "pyproject";
-
+  # Build dependencies
   nativeBuildInputs = [
     cmake
     ninja
@@ -70,21 +72,21 @@ buildPythonApplication.override { stdenv = torch.stdenv; } rec {
     git
     cudaPackages.cuda_nvcc
     autoAddDriverRunpath
-    # Python build dependencies
     setuptools
     setuptools-scm
     packaging
     wheel
     torch
-    python312Packages.cmake
   ];
 
+  # Runtime/build dependencies
   buildInputs = with cudaPackages; [
     nccl
     cudnn
     libcufile
   ] ++ mergedCudaLibraries;
 
+  # Python dependencies
   propagatedBuildInputs = [
     torch
     numpy
@@ -100,24 +102,32 @@ buildPythonApplication.override { stdenv = torch.stdenv; } rec {
     pyzmq
   ];
 
+  # Tell setuptools-scm to use the version from the tag
+  SETUPTOOLS_SCM_PRETEND_VERSION = version;
+
+  # Don't use cmake configure (we use setup.py)
   dontUseCmakeConfigure = true;
 
+  # CMake flags for vLLM build
   cmakeFlags = [
     (lib.cmakeFeature "FETCHCONTENT_SOURCE_DIR_CUTLASS" "${lib.getDev cutlass}")
-    (lib.cmakeFeature "TORCH_CUDA_ARCH_LIST" "10.0;12.0")
+    (lib.cmakeFeature "TORCH_CUDA_ARCH_LIST" "8.6;8.9;9.0")
     (lib.cmakeFeature "CUDA_TOOLKIT_ROOT_DIR" "${symlinkJoin {
       name = "cuda-merged-${cudaPackages.cudaMajorMinorVersion}";
       paths = builtins.concatMap (p: [ (lib.getBin p) (lib.getLib p) (lib.getDev p) ]) mergedCudaLibraries;
     }}")
+    (lib.cmakeFeature "CUTLASS_NVCC_ARCHS_ENABLED" "80;86;89;90")
   ];
 
-  # Patch pyproject.toml to relax version constraints
+  # Patches for pyproject.toml
   postPatch = ''
+    # Relax torch version constraint for nixpkgs compatibility
     substituteInPlace pyproject.toml \
       --replace-fail "torch == 2.10.0" "torch >= 2.10.0" \
       --replace-fail "setuptools>=77.0.3,<81.0.0" "setuptools"
   '';
 
+  # Build environment variables
   env = {
     VLLM_TARGET_DEVICE = "cuda";
     CUDA_HOME = "${lib.getDev cudaPackages.cuda_nvcc}";
@@ -127,18 +137,24 @@ buildPythonApplication.override { stdenv = torch.stdenv; } rec {
     VLLM_DISABLE_SCCACHE = "1";
   };
 
+  # Pre-build setup
   preBuild = ''
     export HOME=$TMPDIR
   '';
 
-  dontUsePipInstall = false;
+  # Don't run tests during build (too slow)
   doCheck = false;
+
+  # Relax Python dependencies
   pythonRelaxDeps = true;
+
+  # Check that vllm imports correctly
   pythonImportsCheck = [ "vllm" ];
 
   meta = with lib; {
     description = "High-throughput and memory-efficient inference and serving engine for LLMs";
-    homepage = "https://github.com/yumesha/vllm";
+    homepage = "https://github.com/vllm-project/vllm";
     license = licenses.asl20;
+    platforms = [ "x86_64-linux" ];
   };
 }
