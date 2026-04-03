@@ -32,6 +32,29 @@
 , requests
 , psutil
 , pyzmq
+  # Additional runtime dependencies
+, cbor2
+, blake3
+, cachetools
+, einops
+, gguf
+, protobuf
+, py-cpuinfo
+, prometheus-client
+, prometheus-fastapi-instrumentator
+, python-json-logger
+, tiktoken
+, compressed-tensors
+, depyf
+, partial-json-parser
+, xgrammar
+, msgspec
+, outlines
+, lm-format-enforcer
+, llguidance
+, opentelemetry-api
+, opentelemetry-sdk
+, opentelemetry-exporter-otlp
 }:
 
 let
@@ -193,6 +216,29 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
     requests
     psutil
     pyzmq
+    # Additional runtime dependencies
+    cbor2
+    blake3
+    cachetools
+    einops
+    gguf
+    protobuf
+    py-cpuinfo
+    prometheus-client
+    prometheus-fastapi-instrumentator
+    python-json-logger
+    tiktoken
+    compressed-tensors
+    depyf
+    partial-json-parser
+    xgrammar
+    msgspec
+    outlines
+    lm-format-enforcer
+    llguidance
+    opentelemetry-api
+    opentelemetry-sdk
+    opentelemetry-exporter-otlp
   ];
 
   # Tell setuptools-scm to use the version from the tag
