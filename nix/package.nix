@@ -60,11 +60,12 @@ buildPythonApplication rec {
     git
     cudaPackages.cuda_nvcc
     autoAddDriverRunpath
-    # Python build dependencies
+    # Python build dependencies (need torch for setup.py import)
     setuptools
     setuptools-scm
     packaging
     wheel
+    torch
   ];
 
   buildInputs = with cudaPackages; [
