@@ -95,7 +95,9 @@ buildPythonApplication rec {
     VLLM_TARGET_DEVICE = "cuda";
     CUDA_HOME = "${lib.getDev cudaPackages.cuda_nvcc}";
     MAX_JOBS = "8";
+    NVCC_THREADS = "1";
     TORCH_CUDA_ARCH_LIST = "10.0;12.0";
+    VLLM_USE_TRITON_FLASH_ATTN = "0";
   };
 
   # Skip pip install check since we build from source
