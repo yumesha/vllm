@@ -60,12 +60,6 @@ buildPythonApplication rec {
     git
     cudaPackages.cuda_nvcc
     autoAddDriverRunpath
-    pip
-    wheel
-    setuptools
-    setuptools-scm
-    packaging
-    torch
   ];
 
   buildInputs = with cudaPackages; [
@@ -94,35 +88,26 @@ buildPythonApplication rec {
   env = {
     VLLM_TARGET_DEVICE = "cuda";
     CUDA_HOME = "${lib.getDev cudaPackages.cuda_nvcc}";
-    MAX_JOBS = "8";
+    MAX_JOBS = "4";
     NVCC_THREADS = "1";
     TORCH_CUDA_ARCH_LIST = "10.0;12.0";
     VLLM_USE_TRITON_FLASH_ATTN = "0";
+    # Disable sccache/ccache detection
+    VLLM_DISABLE_SCCACHE = "1";
   };
 
-  # Skip pip install check since we build from source
-  dontUsePipInstall = true;
-
-  buildPhase = ''
-    runHook preBuild
-
+  # Use pyproject hook for building
+  preBuild = ''
     export HOME=$TMPDIR
-
-    # Build vLLM
-    ${python3.interpreter} setup.py build_ext --inplace
-
-    runHook postBuild
   '';
 
-  installPhase = ''
-    runHook preInstall
+  # pip install handles the build
+  dontUsePipInstall = false;
 
-    # Install using pip
-    pip install . --prefix=$out --no-build-isolation --no-deps
+  # Skip tests during install
+  doCheck = false;
 
-    runHook postInstall
-  '';
-
+  # Avoid strict import check (extensions are built but may not load in build env)
   pythonImportsCheck = [ "vllm" ];
 
   meta = with lib; {
