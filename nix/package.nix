@@ -98,6 +98,40 @@ let
     tag = "v3.6.0";
     hash = "sha256-JFSpQn+WsNnh7CAPlcpOcUp0nyKXNbJEANdXqmkt4Tc=";
   };
+
+  # qutlass source - check cmake/external_projects/qutlass.cmake for GIT_TAG
+  qutlass = fetchFromGitHub {
+    name = "qutlass-source";
+    owner = "IST-DASLab";
+    repo = "qutlass";
+    rev = "830d2c4537c7396e14a02a46fbddd18b5d107c65";
+    hash = "sha256-aG4qd0vlwP+8gudfvHwhtXCFmBOJKQQTvcwahpEqC84=";
+  };
+
+  # vllm-flash-attn source - check cmake/external_projects/vllm_flash_attn.cmake for GIT_TAG
+  vllm-flash-attn = stdenv.mkDerivation {
+    pname = "vllm-flash-attn";
+    version = "2.7.2.post1";
+
+    src = fetchFromGitHub {
+      name = "flash-attention-source";
+      owner = "vllm-project";
+      repo = "flash-attention";
+      rev = "188be16520ceefdc625fdf71365585d2ee348fe2";
+      hash = "sha256-Osec+/IF3+UDtbIhDMBXzUeWJ7hDJNb5FpaVaziPSgM=";
+    };
+
+    dontConfigure = true;
+
+    buildPhase = ''
+      rm -rf csrc/cutlass
+      ln -sf ${cutlass} csrc/cutlass
+    '';
+
+    installPhase = ''
+      cp -rva . $out
+    '';
+  };
 in
 
 buildPythonPackage.override { stdenv = torch.stdenv; } rec {
@@ -165,17 +199,22 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
     NVCC_THREADS = "1";
     VLLM_USE_TRITON_FLASH_ATTN = "0";
     VLLM_DISABLE_SCCACHE = "1";
-    TRITON_KERNELS_SRC_DIR = "${lib.getDev triton-kernels}/python/triton_kernels/triton_kernels";
+    # TRITON_KERNELS_SRC_DIR must point to the triton_kernels directory itself
+    # (not the parent), see cmake/external_projects/triton_kernels.cmake
+    TRITON_KERNELS_SRC_DIR = "${triton-kernels}/python/triton_kernels/triton_kernels";
     # Pass cmake flags via CMAKE_ARGS (read by setup.py)
     CMAKE_ARGS = lib.concatStringsSep " " [
       (lib.cmakeFeature "FETCHCONTENT_SOURCE_DIR_CUTLASS" "${lib.getDev cutlass}")
+      (lib.cmakeFeature "CUTLASS_INCLUDE_DIR" "${lib.getDev cutlass}/include")
       (lib.cmakeFeature "TORCH_CUDA_ARCH_LIST" "8.6;8.9;9.0")
       (lib.cmakeFeature "CUDA_TOOLKIT_ROOT_DIR" "${symlinkJoin {
         name = "cuda-merged-${cudaPackages.cudaMajorMinorVersion}";
         paths = builtins.concatMap (p: [ (lib.getBin p) (lib.getLib p) (lib.getDev p) ]) mergedCudaLibraries;
       }}")
       (lib.cmakeFeature "CUTLASS_NVCC_ARCHS_ENABLED" "80;86;89;90")
-      (lib.cmakeFeature "FLASH_MLA_SRC_DIR" "${flashmla}")
+      (lib.cmakeFeature "FLASH_MLA_SRC_DIR" "${lib.getDev flashmla}")
+      (lib.cmakeFeature "QUTLASS_SRC_DIR" "${lib.getDev qutlass}")
+      (lib.cmakeFeature "VLLM_FLASH_ATTN_SRC_DIR" "${lib.getDev vllm-flash-attn}")
       # Explicitly set VLLM_PYTHON_EXECUTABLE to ensure cmake can find Python
       (lib.cmakeFeature "VLLM_PYTHON_EXECUTABLE" "${python3.interpreter}")
     ];
