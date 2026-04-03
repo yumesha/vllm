@@ -3,11 +3,14 @@
 # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
 """
 Automated release script for vLLM fork.
-Creates a new 0.18.x patch release for every commit.
+Creates a new 0.18.x patch release for every commit on Forgejo.
 """
 
+import json
+import os
 import subprocess
 import sys
+import tempfile
 
 import regex as re
 
@@ -88,6 +91,86 @@ def update_nix_package_version(new_version):
         return False
 
 
+def get_forgejo_config():
+    """Get Forgejo configuration from environment."""
+    token = os.environ.get("FORGEJO_TOKEN")
+    host = os.environ.get("FORGEJO_HOST", "192.168.157.157:30443")
+
+    if not token:
+        print("❌ FORGEJO_TOKEN not set")
+        print("   Set it with: export FORGEJO_TOKEN=your-token")
+        return None, host
+
+    return token, host
+
+
+def get_repo_spec():
+    """Get repository spec from git remote."""
+    try:
+        remote_url = run("git remote get-url origin")
+        # Parse ssh://git@host:port/owner/repo.git or similar
+        if "192.168.157.157" in remote_url:
+            # Extract owner/repo from URL
+            # ssh://git@192.168.157.157:30122/antdev/vllm.git
+            # -> antdev/vllm
+            match = re.search(r"/([^/]+/[^/]+?)(?:\.git)?$", remote_url)
+            if match:
+                return match.group(1)
+    except subprocess.CalledProcessError:
+        pass
+    return None
+
+
+def create_forgejo_release(token, host, repo_spec, tag, name, body):
+    """Create a release on Forgejo."""
+    url = f"https://{host}/api/v1/repos/{repo_spec}/releases"
+
+    data = {"tag_name": tag, "name": name, "body": body, "prerelease": False}
+
+    # Create temp file for JSON payload
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(data, f)
+        json_file = f.name
+
+    try:
+        # Use curl for the request
+        cmd = [
+            "curl",
+            "-s",
+            "-k",
+            "-w",
+            "\n%{http_code}",
+            "-X",
+            "POST",
+            url,
+            "-H",
+            f"Authorization: token {token}",
+            "-H",
+            "Content-Type: application/json",
+            "-d",
+            f"@{json_file}",
+        ]
+
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        output = result.stdout.strip()
+
+        # Parse response
+        lines = output.split("\n")
+        http_code = lines[-1]
+        response_body = "\n".join(lines[:-1])
+
+        if http_code == "201":
+            response_json = json.loads(response_body)
+            return True, response_json.get("html_url", ""), None
+        elif http_code == "409":
+            return False, None, "Release already exists"
+        else:
+            return False, None, f"HTTP {http_code}: {response_body}"
+
+    finally:
+        os.unlink(json_file)
+
+
 def create_release_notes(version, commits):
     """Generate release notes from commits."""
     lines = [f"## {version}", "", "### Changes", ""]
@@ -109,8 +192,22 @@ def confirm(message):
 
 
 def main():
-    print("🚀 Release Management Script")
+    print("🚀 Release Management Script (Forgejo)")
     print("=" * 40)
+
+    # Check Forgejo configuration
+    token, host = get_forgejo_config()
+    if not token:
+        sys.exit(1)
+
+    repo_spec = get_repo_spec()
+    if not repo_spec:
+        print("❌ Could not determine repository from git remote")
+        print("   Make sure origin points to Forgejo")
+        sys.exit(1)
+
+    print(f"📦 Repository: {repo_spec}")
+    print(f"🌐 Forgejo: https://{host}")
 
     print("\n📋 Running safety checks...")
 
@@ -159,9 +256,7 @@ def main():
                     print("❌ Failed to update nix/package.nix")
                     sys.exit(1)
             else:
-                print(
-                    "❌ Release cancelled - fix version manually or allow auto-update"
-                )
+                print("❌ Release cancelled - fix version manually")
                 sys.exit(1)
         else:
             print("✅ Nix package version matches")
@@ -185,7 +280,8 @@ def main():
 
     print(f"\n🏷️  Creating tag {next_version}...")
     release_notes = create_release_notes(next_version, commits)
-    tag_message = f"{next_version} - Bug fix release\n\n" + "\n".join(commits[:5])
+    tag_message = f"{next_version} - Bug fix release\n\n"
+    tag_message += "\n".join(commits[:5])
 
     run(f"git tag -a {next_version} -m '{tag_message}'")
     print(f"✅ Tag created: {next_version}")
@@ -194,21 +290,21 @@ def main():
     run(f"git push origin {next_version}")
     print("✅ Tag pushed")
 
-    print("\n🌐 Creating GitHub release...")
-    try:
-        run(
-            f"gh release create {next_version} "
-            f'--title "{next_version}" '
-            f'--notes "{release_notes}"'
-        )
-        print("✅ GitHub release created")
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Failed to create GitHub release: {e}")
+    print("\n🌐 Creating Forgejo release...")
+    success, release_url, error = create_forgejo_release(
+        token, host, repo_spec, next_version, next_version, release_notes
+    )
+
+    if success:
+        print("✅ Forgejo release created")
+        if release_url:
+            print(f"   URL: {release_url}")
+    else:
+        print(f"❌ Failed to create Forgejo release: {error}")
         print("   You may need to create it manually:")
-        print(f"   gh release create {next_version}")
+        print(f"   curl -X POST https://{host}/api/v1/repos/{repo_spec}/releases")
 
     print(f"\n✨ Release {next_version} complete!")
-    print(f"   URL: https://github.com/yumesha/vllm/releases/tag/{next_version}")
 
 
 if __name__ == "__main__":
