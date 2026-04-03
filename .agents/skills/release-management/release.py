@@ -9,6 +9,8 @@ Creates a new 0.18.x patch release for every commit.
 import subprocess
 import sys
 
+import regex as re
+
 
 def run(cmd, check=True, capture_output=True):
     """Run a shell command."""
@@ -51,6 +53,39 @@ def get_commits_since_last_release(latest_tag):
         return commits.split("\n") if commits else []
     except subprocess.CalledProcessError:
         return []
+
+
+def get_nix_package_version():
+    """Get version from nix/package.nix."""
+    try:
+        with open("nix/package.nix") as f:
+            content = f.read()
+        match = re.search(r'version = "([^"]+)";', content)
+        if match:
+            return match.group(1)
+    except FileNotFoundError:
+        pass
+    return None
+
+
+def update_nix_package_version(new_version):
+    """Update version in nix/package.nix."""
+    try:
+        with open("nix/package.nix") as f:
+            content = f.read()
+
+        # Replace version line
+        new_content = re.sub(
+            r'version = "[^"]+";', f'version = "{new_version}";', content
+        )
+
+        with open("nix/package.nix", "w") as f:
+            f.write(new_content)
+
+        return True
+    except Exception as e:
+        print(f"❌ Failed to update nix/package.nix: {e}")
+        return False
 
 
 def create_release_notes(version, commits):
@@ -98,8 +133,38 @@ def main():
     print("\n📊 Version information:")
     latest = get_latest_version()
     next_version = get_next_version(latest)
+    next_version_without_v = next_version.lstrip("v")
     print(f"   Latest: {latest}")
     print(f"   Next:   {next_version}")
+
+    # Check nix/package.nix version
+    nix_version = get_nix_package_version()
+    if nix_version:
+        print(f"   Nix package: {nix_version}")
+        if nix_version != next_version_without_v:
+            print("\n⚠️  Version mismatch detected!")
+            print(f"   nix/package.nix has: {nix_version}")
+            print(f"   Will be updated to:  {next_version_without_v}")
+            if confirm("Auto-update nix/package.nix?"):
+                if update_nix_package_version(next_version_without_v):
+                    print("✅ Updated nix/package.nix")
+                    # Commit the version update
+                    run("git add nix/package.nix")
+                    commit_msg = "chore: update version to "
+                    commit_msg += f"{next_version_without_v}"
+                    run(f'git commit -m "{commit_msg}"')
+                    run("git push origin main")
+                    print("✅ Committed and pushed version update")
+                else:
+                    print("❌ Failed to update nix/package.nix")
+                    sys.exit(1)
+            else:
+                print(
+                    "❌ Release cancelled - fix version manually or allow auto-update"
+                )
+                sys.exit(1)
+        else:
+            print("✅ Nix package version matches")
 
     commits = get_commits_since_last_release(latest)
     if not commits:
