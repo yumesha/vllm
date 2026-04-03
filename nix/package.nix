@@ -104,20 +104,6 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
   # Tell setuptools-scm to use the version from the tag
   SETUPTOOLS_SCM_PRETEND_VERSION = version;
 
-  # Don't use cmake configure (we use setup.py)
-  dontUseCmakeConfigure = true;
-
-  # CMake flags for vLLM build
-  cmakeFlags = [
-    (lib.cmakeFeature "FETCHCONTENT_SOURCE_DIR_CUTLASS" "${lib.getDev cutlass}")
-    (lib.cmakeFeature "TORCH_CUDA_ARCH_LIST" "8.6;8.9;9.0")
-    (lib.cmakeFeature "CUDA_TOOLKIT_ROOT_DIR" "${symlinkJoin {
-      name = "cuda-merged-${cudaPackages.cudaMajorMinorVersion}";
-      paths = builtins.concatMap (p: [ (lib.getBin p) (lib.getLib p) (lib.getDev p) ]) mergedCudaLibraries;
-    }}")
-    (lib.cmakeFeature "CUTLASS_NVCC_ARCHS_ENABLED" "80;86;89;90")
-  ];
-
   # Patches for pyproject.toml
   postPatch = ''
     # Relax torch version constraint for nixpkgs compatibility
@@ -134,6 +120,16 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
     NVCC_THREADS = "1";
     VLLM_USE_TRITON_FLASH_ATTN = "0";
     VLLM_DISABLE_SCCACHE = "1";
+    # Pass cmake flags via CMAKE_ARGS (read by setup.py)
+    CMAKE_ARGS = lib.concatStringsSep " " [
+      (lib.cmakeFeature "FETCHCONTENT_SOURCE_DIR_CUTLASS" "${lib.getDev cutlass}")
+      (lib.cmakeFeature "TORCH_CUDA_ARCH_LIST" "8.6;8.9;9.0")
+      (lib.cmakeFeature "CUDA_TOOLKIT_ROOT_DIR" "${symlinkJoin {
+        name = "cuda-merged-${cudaPackages.cudaMajorMinorVersion}";
+        paths = builtins.concatMap (p: [ (lib.getBin p) (lib.getLib p) (lib.getDev p) ]) mergedCudaLibraries;
+      }}")
+      (lib.cmakeFeature "CUTLASS_NVCC_ARCHS_ENABLED" "80;86;89;90")
+    ];
   };
 
   # Pre-build setup
