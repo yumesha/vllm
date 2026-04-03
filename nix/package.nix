@@ -83,6 +83,9 @@
   cupy ? null,
   flashinfer ? null,
   nvidia-ml-py ? null,
+  # Build system dependencies
+  jinja2 ? null,
+  grpcio-tools ? null,
   # Build tools
   which,
 }:
