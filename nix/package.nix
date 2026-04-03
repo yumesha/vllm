@@ -142,11 +142,12 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
     VLLM_DISABLE_SCCACHE = "1";
   };
 
+  # Disable PEP 517 build isolation so we can use our cmake
+  pipBuildFlags = [ "--no-build-isolation" ];
+
   # Pre-build setup
   preBuild = ''
     export HOME=$TMPDIR
-    # Ensure cmake is in PATH for PEP 517 build
-    export PATH="${lib.makeBinPath [ cmake ninja ]}:$PATH"
   '';
 
   # Don't run tests during build (too slow)
