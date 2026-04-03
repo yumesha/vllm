@@ -33,56 +33,56 @@
   requests,
   psutil,
   pyzmq,
-  # Additional runtime dependencies
-  cbor2,
-  blake3,
-  cachetools,
-  einops,
-  gguf,
-  protobuf,
-  py-cpuinfo,
-  prometheus-client,
-  prometheus-fastapi-instrumentator,
-  python-json-logger,
-  tiktoken,
-  compressed-tensors,
-  depyf,
-  partial-json-parser,
-  xgrammar,
-  msgspec,
-  outlines,
-  lm-format-enforcer,
-  llguidance,
-  opentelemetry-api,
-  opentelemetry-sdk,
-  opentelemetry-exporter-otlp,
-  # More dependencies from reference
-  aioprometheus,
-  anthropic,
-  bitsandbytes,
-  grpcio,
-  grpcio-reflection,
-  ijson,
-  importlib-metadata,
-  mcp,
-  mistral-common,
-  model-hosting-container-standards,
-  numba,
-  openai,
-  openai-harmony,
-  opencv-python-headless,
-  pandas,
-  pyarrow,
-  pybase64,
-  ray,
-  setproctitle,
-  torchaudio,
-  torchvision,
-  xformers,
-  # CUDA-only dependencies
-  cupy,
-  flashinfer,
-  nvidia-ml-py,
+  # Additional runtime dependencies (optional with defaults)
+  cbor2 ? null,
+  blake3 ? null,
+  cachetools ? null,
+  einops ? null,
+  gguf ? null,
+  protobuf ? null,
+  py-cpuinfo ? null,
+  prometheus-client ? null,
+  prometheus-fastapi-instrumentator ? null,
+  python-json-logger ? null,
+  tiktoken ? null,
+  compressed-tensors ? null,
+  depyf ? null,
+  partial-json-parser ? null,
+  xgrammar ? null,
+  msgspec ? null,
+  outlines ? null,
+  lm-format-enforcer ? null,
+  llguidance ? null,
+  opentelemetry-api ? null,
+  opentelemetry-sdk ? null,
+  opentelemetry-exporter-otlp ? null,
+  # More dependencies from reference (optional with defaults)
+  aioprometheus ? null,
+  anthropic ? null,
+  bitsandbytes ? null,
+  grpcio ? null,
+  grpcio-reflection ? null,
+  ijson ? null,
+  importlib-metadata ? null,
+  mcp ? null,
+  mistral-common ? null,
+  model-hosting-container-standards ? null,
+  numba ? null,
+  openai ? null,
+  openai-harmony ? null,
+  opencv-python-headless ? null,
+  pandas ? null,
+  pyarrow ? null,
+  pybase64 ? null,
+  ray ? null,
+  setproctitle ? null,
+  torchaudio ? null,
+  torchvision ? null,
+  xformers ? null,
+  # CUDA-only dependencies (optional with defaults)
+  cupy ? null,
+  flashinfer ? null,
+  nvidia-ml-py ? null,
   # Build tools
   which,
 }:
@@ -250,7 +250,9 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
     requests
     psutil
     pyzmq
-    # Additional runtime dependencies
+  ]
+  # Optional runtime dependencies - filter out nulls
+  ++ lib.filter (x: x != null) [
     cbor2
     blake3
     cachetools
@@ -273,7 +275,6 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
     opentelemetry-api
     opentelemetry-sdk
     opentelemetry-exporter-otlp
-    # More dependencies from reference
     aioprometheus
     anthropic
     bitsandbytes
