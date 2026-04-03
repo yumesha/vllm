@@ -210,7 +210,7 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
   # Use local source
   src = lib.cleanSource ../.;
 
-  # Build dependencies
+  # Build dependencies - including Python build tools for nixos 25.05 compatibility
   nativeBuildInputs = [
     cmake
     ninja
@@ -219,9 +219,17 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
     which
     cudaPackages.cuda_nvcc
     autoAddDriverRunpath
+    # Python build tools - needed for build backend
+    python3.pkgs.setuptools
+    python3.pkgs.setuptools-scm
+    python3.pkgs.packaging
+    python3.pkgs.wheel
+    torch
+    jinja2
+    grpcio-tools
   ];
 
-  # PEP-517 build system - must match pyproject.toml build-system
+  # PEP-517 build system - also declare for modern nixpkgs
   build-system = [
     setuptools
     setuptools-scm
