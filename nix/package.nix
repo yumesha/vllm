@@ -44,6 +44,14 @@ let
     cuda_nvrtc
     libcublas
   ];
+
+  # Fetch CUTLASS source for vLLM build
+  cutlass = fetchFromGitHub {
+    owner = "NVIDIA";
+    repo = "cutlass";
+    rev = "v4.4.2";  # Match CUTLASS_REVISION in CMakeLists.txt
+    hash = "sha256-0iwcw4hsdpp1mlvsgf1xmg908zgh3kjf4k7pv37gl4vs8rvl1byj=";
+  };
 in
 
 buildPythonApplication rec {
@@ -109,6 +117,8 @@ buildPythonApplication rec {
     VLLM_USE_TRITON_FLASH_ATTN = "0";
     # Disable sccache/ccache detection
     VLLM_DISABLE_SCCACHE = "1";
+    # Provide pre-fetched CUTLASS source
+    VLLM_CUTLASS_SRC_DIR = "${cutlass}";
   };
 
   # Use pyproject hook for building
