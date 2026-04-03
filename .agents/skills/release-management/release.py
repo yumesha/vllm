@@ -8,11 +8,10 @@ Creates a new 0.18.x patch release for every commit on Forgejo.
 
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
-
-import regex as re
 
 
 def run(cmd, check=True, capture_output=True):
