@@ -139,6 +139,9 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
     export HOME=$TMPDIR
   '';
 
+  # Disable cmake configure phase - vllm uses setup.py
+  dontUseCmakeConfigure = true;
+
   # Don't run tests during build (too slow)
   doCheck = false;
 
