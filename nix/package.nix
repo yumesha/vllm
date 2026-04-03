@@ -30,6 +30,7 @@
 , requests
 , psutil
 , pyzmq
+, python312Packages
 }:
 
 let
@@ -60,12 +61,14 @@ buildPythonApplication rec {
     git
     cudaPackages.cuda_nvcc
     autoAddDriverRunpath
-    # Python build dependencies (need torch for setup.py import)
+    # Python build dependencies
     setuptools
     setuptools-scm
     packaging
     wheel
     torch
+    # Python cmake package (required by pyproject.toml build-system)
+    python312Packages.cmake
   ];
 
   buildInputs = with cudaPackages; [
@@ -91,11 +94,10 @@ buildPythonApplication rec {
 
   dontUseCmakeConfigure = true;
 
-  # Patch pyproject.toml to relax version constraints for Nix build
+  # Patch pyproject.toml to relax torch version constraint only
   postPatch = ''
     substituteInPlace pyproject.toml \
-      --replace 'cmake>=3.26.1' 'cmake' \
-      --replace 'torch == 2.10.0' 'torch'
+      --replace-fail 'torch == 2.10.0' 'torch'
   '';
 
   env = {
