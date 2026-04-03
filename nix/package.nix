@@ -1,89 +1,90 @@
 # nix/package.nix
 # Nix package for vLLM - builds from local source
 
-{ lib
-, stdenv
-, python3
-, fetchFromGitHub
-, fetchpatch
-, cudaPackages
-, autoAddDriverRunpath
-, symlinkJoin
-, git
-, cmake
-, ninja
-, gcc13
+{
+  lib,
+  stdenv,
+  python3,
+  fetchFromGitHub,
+  fetchpatch,
+  cudaPackages,
+  autoAddDriverRunpath,
+  symlinkJoin,
+  git,
+  cmake,
+  ninja,
+  gcc13,
   # Python packages - from python3.pkgs
-, buildPythonPackage
-, pip
-, wheel
-, setuptools
-, setuptools-scm
-, packaging
-, torch
-, numpy
-, transformers
-, fastapi
-, uvicorn
-, pydantic
-, sentencepiece
-, tokenizers
-, huggingface-hub
-, requests
-, psutil
-, pyzmq
+  buildPythonPackage,
+  pip,
+  wheel,
+  setuptools,
+  setuptools-scm,
+  packaging,
+  torch,
+  numpy,
+  transformers,
+  fastapi,
+  uvicorn,
+  pydantic,
+  sentencepiece,
+  tokenizers,
+  huggingface-hub,
+  requests,
+  psutil,
+  pyzmq,
   # Additional runtime dependencies
-, cbor2
-, blake3
-, cachetools
-, einops
-, gguf
-, protobuf
-, py-cpuinfo
-, prometheus-client
-, prometheus-fastapi-instrumentator
-, python-json-logger
-, tiktoken
-, compressed-tensors
-, depyf
-, partial-json-parser
-, xgrammar
-, msgspec
-, outlines
-, lm-format-enforcer
-, llguidance
-, opentelemetry-api
-, opentelemetry-sdk
-, opentelemetry-exporter-otlp
+  cbor2,
+  blake3,
+  cachetools,
+  einops,
+  gguf,
+  protobuf,
+  py-cpuinfo,
+  prometheus-client,
+  prometheus-fastapi-instrumentator,
+  python-json-logger,
+  tiktoken,
+  compressed-tensors,
+  depyf,
+  partial-json-parser,
+  xgrammar,
+  msgspec,
+  outlines,
+  lm-format-enforcer,
+  llguidance,
+  opentelemetry-api,
+  opentelemetry-sdk,
+  opentelemetry-exporter-otlp,
   # More dependencies from reference
-, aioprometheus
-, anthropic
-, bitsandbytes
-, grpcio
-, grpcio-reflection
-, ijson
-, importlib-metadata
-, mcp
-, mistral-common
-, model-hosting-container-standards
-, numba
-, openai
-, openai-harmony
-, opencv-python-headless
-, pandas
-, pyarrow
-, pybase64
-, ray
-, setproctitle
-, torchaudio
-, torchvision
-, xformers
+  aioprometheus,
+  anthropic,
+  bitsandbytes,
+  grpcio,
+  grpcio-reflection,
+  ijson,
+  importlib-metadata,
+  mcp,
+  mistral-common,
+  model-hosting-container-standards,
+  numba,
+  openai,
+  openai-harmony,
+  opencv-python-headless,
+  pandas,
+  pyarrow,
+  pybase64,
+  ray,
+  setproctitle,
+  torchaudio,
+  torchvision,
+  xformers,
   # CUDA-only dependencies
-, cupy
-, flashinfer
-, nvidia-ml-py
+  cupy,
+  flashinfer,
+  nvidia-ml-py,
   # Build tools
-, which
+  which,
 }:
 
 let
@@ -104,7 +105,7 @@ let
     name = "cutlass-source";
     owner = "NVIDIA";
     repo = "cutlass";
-    tag = "v4.4.2";  # Match CUTLASS_REVISION in CMakeLists.txt
+    tag = "v4.4.2"; # Match CUTLASS_REVISION in CMakeLists.txt
     hash = "sha256-0q9Ad0Z6E/rO2PdM4uQc8H0E0qs9uKc3reHepiHhjEc=";
   };
 
@@ -226,11 +227,14 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
   ];
 
   # Runtime/build dependencies
-  buildInputs = with cudaPackages; [
-    nccl
-    cudnn
-    libcufile
-  ] ++ mergedCudaLibraries;
+  buildInputs =
+    with cudaPackages;
+    [
+      nccl
+      cudnn
+      libcufile
+    ]
+    ++ mergedCudaLibraries;
 
   # Python dependencies
   propagatedBuildInputs = [
@@ -312,7 +316,7 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
   env = {
     VLLM_TARGET_DEVICE = "cuda";
     CUDA_HOME = "${lib.getDev cudaPackages.cuda_nvcc}";
-    MAX_JOBS = "4";
+    MAX_JOBS = "8";
     NVCC_THREADS = "1";
     VLLM_USE_TRITON_FLASH_ATTN = "0";
     VLLM_DISABLE_SCCACHE = "1";
@@ -327,7 +331,11 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
       (lib.cmakeFeature "TORCH_CUDA_ARCH_LIST" "8.6;8.9;9.0;10.0;12.0")
       (lib.cmakeFeature "CUDA_TOOLKIT_ROOT_DIR" "${symlinkJoin {
         name = "cuda-merged-${cudaPackages.cudaMajorMinorVersion}";
-        paths = builtins.concatMap (p: [ (lib.getBin p) (lib.getLib p) (lib.getDev p) ]) mergedCudaLibraries;
+        paths = builtins.concatMap (p: [
+          (lib.getBin p)
+          (lib.getLib p)
+          (lib.getDev p)
+        ]) mergedCudaLibraries;
       }}")
       (lib.cmakeFeature "CUTLASS_NVCC_ARCHS_ENABLED" "80;86;89;90;100;120")
       (lib.cmakeFeature "CAFFE2_USE_CUDNN" "ON")
