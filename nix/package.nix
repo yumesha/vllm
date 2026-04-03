@@ -58,7 +58,7 @@ in
 buildPythonPackage.override { stdenv = torch.stdenv; } rec {
   pname = "vllm";
   version = "0.18.12";
-  pyproject = true;
+  format = "setuptools";
 
   # Use local source
   src = lib.cleanSource ../.;
@@ -71,17 +71,11 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
     git
     cudaPackages.cuda_nvcc
     autoAddDriverRunpath
-  ];
-
-  # Python build system dependencies
-  build-system = [
-    cmake
-    ninja
-    packaging
     setuptools
     setuptools-scm
-    torch
+    packaging
     wheel
+    torch
   ];
 
   # Runtime/build dependencies
@@ -141,9 +135,6 @@ buildPythonPackage.override { stdenv = torch.stdenv; } rec {
     VLLM_USE_TRITON_FLASH_ATTN = "0";
     VLLM_DISABLE_SCCACHE = "1";
   };
-
-  # Disable PEP 517 build isolation so we can use our cmake
-  pipBuildFlags = [ "--no-build-isolation" ];
 
   # Pre-build setup
   preBuild = ''
